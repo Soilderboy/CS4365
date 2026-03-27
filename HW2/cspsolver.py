@@ -21,9 +21,10 @@ def load_variables(var_file):
             line = line.strip()
             if not line:
                 continue
-            var, domain_str = line.split('=')
+            var, domain_str = line.split(':')
             var = var.strip()
-            domain = [val.strip() for val in domain_str.split(' ')] #split by space
+            #strip returns false for empty strings
+            domain = [val.strip() for val in domain_str.split(' ') if val.strip()] #filter empty strings, then split by space, then strip each value
             variables[var] = domain #dict[var] = domain list ['1','2','3',...]
     return variables
 
@@ -34,11 +35,10 @@ def load_constraints(con_file):
             line = line.strip()
             if not line:
                 continue
-            var1, rest = line.split(' ', 1) #split only first space
-            var2, operator = rest.rsplit(' ', 1) #split from right
-            var1 = var1.strip()
-            var2 = var2.strip()
-            operator = operator.strip()
+            parts = line.split() #three parts
+            var1 = parts[0].strip()
+            operator = parts[1].strip()
+            var2 = parts[2].strip()
             constraints.append((var1, var2, operator)) #append as tuple
     return constraints
 
@@ -73,7 +73,6 @@ def select_unassigned_variable(unassigned_vars, domains, constraints):
 
 
 def order_domain_values(var, assignment, domains, constraints):
-
     #LCV - choose value that rules out least values in neighbors, if tie, use smaller integer
     value_constraints = {}
     #for each value in domain, count how many values it rules out in unassigned neighbor domains
@@ -89,9 +88,8 @@ def order_domain_values(var, assignment, domains, constraints):
                     if not check_constraint(val, value, op):
                         ruled_out += 1
         value_constraints[value] = ruled_out
-    #x[1] is ruled_out count, x[0] is value
-    best_value = sorted(value_constraints.items(), key=lambda x: (x[1], int(x[0])))[0][0]
-    return best_value
+    #x[1] is ruled_out count, x[0] is value, return sorted list of values by least ruled out, then smallest integer
+    return [v for v, _ in sorted(value_constraints.items(), key=lambda x: (x[1], int(x[0])))]
 
 
 def is_consistent(var, value, assignment, constraints):
@@ -144,7 +142,7 @@ def forward_check(var, value, domains, constraints, assignment):
             domains[v1] = new_domain
     return True
 
-def record_failure(var, value, assignment, history):
+def record_failure(assignment, history):
     #Format: "VAR1=val1, VAR2=val2, ... failure"
     #variables in order they were assigned, then append "failure" to history
     assignment_str = ', '.join(f"{v}={assignment[v]}" for v in assignment)
@@ -156,8 +154,9 @@ def solve_csp(variables, constraints, consistency_method):
     domains = {var: variables[var][:] for var in variables}
 
     def backtrack(assignment):
-        #success case
         if len(assignment) == len(variables):
+            assignment_str = ', '.join(f"{v}={assignment[v]}" for v in assignment)
+            history.append(f"{assignment_str} solution")
             return assignment
         
         #select unassigned variable using MCV, MConV, alphabetical
@@ -168,30 +167,36 @@ def solve_csp(variables, constraints, consistency_method):
         values = order_domain_values(var, assignment, domains, constraints)
         
         for value in values:
-            if is_consistent(var, value, assignment, constraints):
-                assignment[var] = value
-                #save current domain to restore later
-                saved_domains = {v: domains[v][:] for v in variables} #for all vars, v is key, domains[v] is value list, [:] to copy list
+            assignment[var] = value
 
-                #forward checking mode
-                if consistency_method == 'fc':
-                    #if forward check fails, record failure and restore domains
-                    if not forward_check(var, value, domains, constraints, assignment):
-                        record_failure(var, value, assignment, history)
-                        for v in variables:
-                            variables[v] = saved_domains[v][:] #restore domain
-                            del assignment[var]
-                            continue
-                #backtrack recursively
-                result = backtrack(assignment)
-                if result is not None:
-                    return result
-                
-                #backtrack - restore
-                record_failure(var, value, assignment, history) #updates history with failed branches
-                for v in variables:
-                    variables[v] = saved_domains[v]
+            # record failure for tried values that violate constraints immediately
+            if not is_consistent(var, value, assignment, constraints):
+                record_failure(assignment, history)
                 del assignment[var]
+                continue
+
+            #save current domain to restore later
+            saved_domains = {v: domains[v][:] for v in variables} #for all vars, v is key, domains[v] is value list, [:] to copy list
+
+            #forward checking mode
+            if consistency_method == 'fc':
+                #if forward check fails, record failure and restore domains
+                if not forward_check(var, value, domains, constraints, assignment):
+                    record_failure(assignment, history)
+                    for v in variables:
+                        domains[v] = saved_domains[v]
+                    del assignment[var]
+                    continue
+
+            #backtrack recursively
+            result = backtrack(assignment)
+            if result is not None:
+                return result
+
+            #backtrack - restore domains and try next value
+            for v in variables:
+                domains[v] = saved_domains[v]
+            del assignment[var]
         return None
     
     backtrack(assignment)

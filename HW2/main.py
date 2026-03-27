@@ -39,11 +39,10 @@ def main():
     constraints = cspsolver.load_constraints(con_file)
 
     #solve csp
-    print("Search tree branches:")
     history = cspsolver.solve_csp(variables, constraints, consistency_method)
     #if history is not empty, print search tree branches
     for i, branch in enumerate(history, 1): #enumerate returns (index, value) starting from 1
-        print(f"Branch {i}: {branch}")
+        print(f"{i}. {branch}")
 
 if __name__ == "__main__":
     main()
