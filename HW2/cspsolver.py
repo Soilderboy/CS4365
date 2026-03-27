@@ -45,7 +45,7 @@ def load_constraints(con_file):
 def select_unassigned_variable(unassigned_vars, domains, constraints):
     #return variable with smallest domain, then highest constraints, then alphabetical
     min_domain_size = float('inf')
-    candidates = {} #var: mcv_count
+    candidates = []
     
     for var in unassigned_vars:
         #smallest domain gets added to candidates, if tie, add to candidate,
@@ -53,22 +53,24 @@ def select_unassigned_variable(unassigned_vars, domains, constraints):
         domain_size = len(domains[var])
         if domain_size < min_domain_size:
             min_domain_size = domain_size
-            candidates = {var: 0} #new candidate
+            candidates = [var]
         elif domain_size == min_domain_size:
-            candidates[var] = 0 #tie
-        #then, MCV - count how many constraints this var has with other unassigned vars
+            candidates.append(var)
+
+    #then, MConV - count how many constraints each MCV candidate has with other unassigned vars
+    scored = []
+    for var in candidates:
         mcv_count = 0
         for (v1, v2, op) in constraints:
             if var == v1 and v2 in unassigned_vars:
                 mcv_count += 1
             elif var == v2 and v1 in unassigned_vars:
                 mcv_count += 1
-        
-        candidates[var] = mcv_count
+        scored.append((var, mcv_count))
 
     #x[0] is var, x[1] is mcv_count, -x[1] for descending
     #sort will sort mcv_count first, then var name for alphabetical.
-    best_var = sorted(candidates.items(), key=lambda x: (-x[1], x[0]))[0][0] #sorted gives (var, mcv_count), [0][0] gives best var
+    best_var = sorted(scored, key=lambda x: (-x[1], x[0]))[0][0] #sorted gives (var, mcv_count), [0][0] gives best var
     return best_var
 
 
@@ -146,7 +148,7 @@ def record_failure(assignment, history):
     #Format: "VAR1=val1, VAR2=val2, ... failure"
     #variables in order they were assigned, then append "failure" to history
     assignment_str = ', '.join(f"{v}={assignment[v]}" for v in assignment)
-    history.append(f"{assignment_str} failure")
+    history.append(f"{assignment_str}  failure")
 
 def solve_csp(variables, constraints, consistency_method):
     assignment = {}
@@ -156,7 +158,7 @@ def solve_csp(variables, constraints, consistency_method):
     def backtrack(assignment):
         if len(assignment) == len(variables):
             assignment_str = ', '.join(f"{v}={assignment[v]}" for v in assignment)
-            history.append(f"{assignment_str} solution")
+            history.append(f"{assignment_str}  solution")
             return assignment
         
         #select unassigned variable using MCV, MConV, alphabetical
