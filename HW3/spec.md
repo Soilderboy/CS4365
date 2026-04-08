@@ -110,4 +110,92 @@ Your program’s output should be:
 7. y {4, 2}
 8. ∼z {5, 2}
 6. Contradiction {7, 5}
-Valid
+(B) Power Plant Diagnosis
+In the last part of this assignment you will be using your resolution prover to verify the safety
+requirements of a reactor unit in a nuclear power plant. The reactor unit is shown in the figure on
+the next page and consists of a reactor R, two heat exchangers H1 and H2, two steam valves V 1
+and V 2, and a control stick l for changing the level of energy production. The state of the reactor
+unit is given by 5 propositional variables l, okH1, okH2, V 1 and V 2. If l has the value True
+the production level is 2 energy units. Otherwise, the production level is 1 energy unit. At least
+one working heat exchanger is necessary for each energy unit produced to keep the reactor from
+overheating. Unfortunately a heat exchanger i can start leaking reactive water from the internal
+cooling system to the surroundings. okHi is False if heat exchanger Hi is leaking. Otherwise,
+okHi is True. When a heat exchanger i is leaking, it must be shut off by closing its valve V i. The
+state variable V i indicates whether the valve V i is closed (False) or open (True). Formally, the
+safety requirements are described by the following clauses:
+NoLeak ∧ LowT emp ⇒ ReactorUnitSafe
+NoLeakH1 ∧ NoLeakH2 ⇒ NoLeak
+okH1 ⇒ NoLeakH1
+¬okH1 ∧ ¬V 1 ⇒ NoLeakH1
+okH2 ⇒ NoLeakH2
+¬okH2 ∧ ¬V 2 ⇒ NoLeakH2
+l ∧ V 1 ∧ V 2 ⇒ LowT emp
+¬l ∧ V 1 ⇒ LowT emp
+¬l ∧ V 2 ⇒ LowT emp
+4
+Assume that the current state of the reactor unit is given by the clauses:
+¬l
+¬okH2
+okH1
+V 1
+¬V 2
+1. Rewrite the safely rules from their implicative form to the disjunctive form used by your
+resolution prover. The initial set of valid clauses is the union of the rule clauses and the
+clauses defining the current state. Write the clauses in a file called facts.txt.
+2. Use your resolution prover to test whether LowT emp is a valid clause:
+(a) Save the input in a file called task1.in.
+(b) Test the result of your prover.
+3. Now test the validity of ReactorUnitSafe in a similar way:
+(a) Save the input in a file called task2.in.
+(b) Test the result of your prover.
+4. Consider a simpler set of safety rules:
+NoLeakH1 ∧ NoLeakH2 ⇒ NoLeak
+okH1 ⇒ NoLeakH1
+¬okH1 ∧ ¬V 1 ⇒ NoLeakH1
+okH2 ⇒ NoLeakH2
+¬okH2 ∧ ¬V 2 ⇒ NoLeakH2
+and a reduced current state description:
+¬okH2
+okH1
+¬V 2
+5
+Test the validity of ¬NoLeak:
+(a) Save the input in a file task3.in.
+(b) Test the result of your prover.
+Implementation and Submission Requirements
+The program must be written in C++ (g++ 7.5.0), Java (openjdk 11.0.13 2021-10-19), or
+Python (3.6.9).
+You may submit as many source files as needed, but you must make sure your provide a main
+code entry that follows the following naming convention. Specifically, if you are using:
+• Python
+– Make sure that your primary source file is main.py and that your code runs
+successfully after executing python main.py <path_to_kb_file>.
+• C++
+– Make sure that your primary source file is main.cpp and that your code runs
+successfully after executing g++ main.cpp -o a.out -std=c++17 and
+./a.out <path_to_kb_file>.
+• Java
+– Make sure that your primary source file is Main.java and that
+your code runs successfully after executing javac Main.java and
+java Main <path_to_kb_file>.
+Your code should not use any external libraries (except for numpy-1.19.5 and pandas-1.1.5
+if you are using Python). If it does, the autograder will not be able to run your code and you
+will receive no credit.
+Submission
+Once you are done, sign in to gradescope. You will be able to see Assignment 3 - Part
+1 (4365.001.S26) under the Assignments section. Directly submit all your source files,
+task1.in, task2.in, task3.in and the facts.txt file to this submission folder. Do not create any
+folder and do not rename the files or upload the files in a zip file or folder (your homework
+will not be graded otherwise). If you worked in a group, make sure to add your partner when
+you submit!
+Grading
+We will be using an output-based auto-grader for this submission, so make sure you follow
+the formatting from the example test files: be careful not to insert extra lines, tabs instead of
+spaces, etc ... When you submit, your code will be graded using hidden test cases, so we
+encourage you to test your code thoroughly. More information about the autograder will be
+available on Piazza shortly.
+6
+Important: Be mindful of the efficiency of your implementation; as the test cases we will
+use are quite long, poorly written code might time out (and receive no credit!). We will
+provide you with example input files and approximate timings for each, so you can get an
+idea of how fast your code is.

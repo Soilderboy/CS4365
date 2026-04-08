@@ -30,16 +30,19 @@ import sys #for cmd line args
 class Clause:
     def __init__(self, clause_str):
         #clause_str is form "A B ~C"
-        self.literals = set()
+        self.literals = []
+        seen = set()  #track duplicates
         for lit in clause_str.split():
-            self.literals.add(lit)
+            if lit and lit not in seen:
+                self.literals.append(lit)
+                seen.add(lit)
 
     def __str__(self):
         #return string representation of clause
-        return " ".join(sorted(self.literals))
+        return " ".join(self.literals)
     def __eq__(self, other):
-        #check if two clauses are equal
-        return self.literals == other.literals
+        #check if two clauses are equal (compare as sets)
+        return set(self.literals) == set(other.literals)
     def is_empty(self):
         #check if clause is empty (contradiction)
         return len(self.literals) == 0
@@ -79,8 +82,10 @@ def resolve(clause1, clause2):
         for lit2 in clause2.literals:
             if are_complements(lit1, lit2):
                 #create new clause with all literals except complementary pair
-                new_lits = (clause1.literals - {lit1}) | (clause2.literals - {lit2})
-                new_clause = Clause(literals_to_string(new_lits))
+                #new_lits = (clause1.literals - {lit1}) | (clause2.literals - {lit2})
+                new_lits_str = " ".join([l for l in clause1.literals if l != lit1]
+                                        + [l for l in clause2.literals if l != lit2])
+                new_clause = Clause(new_lits_str)
                 if not is_tautology(new_clause):
                     return new_clause
     return None
@@ -122,11 +127,13 @@ def main():
     #track clauses and parents
     clauses = []
     parents = []
+    seen = set() #taking forever bc of duplicate checking
 
     #add initial kb clauses
     for clause in kb_clauses:
         clauses.append(clause)
         parents.append(None)
+        seen.add(frozenset(clause.literals))
     
     #negate goal and add as separate clauses
     for lit in goal_clause.literals:
@@ -134,10 +141,10 @@ def main():
         new_clause = Clause(negated)
         clauses.append(new_clause)
         parents.append(None)
-    
+        seen.add(frozenset(new_clause.literals))
     #resolution loop
     found_contradiction = False
-    i = len(kb_clauses)
+    i = 0
     while i < len(clauses) and not found_contradiction:
         for j in range(i):
             resolvent = resolve(clauses[i], clauses[j])
@@ -153,12 +160,13 @@ def main():
                 if is_tautology(resolvent):
                     continue
             
-                is_redundant = any(resolvent == c for c in clauses)
-                if is_redundant:
+                resolvent_key = frozenset(resolvent.literals)
+                if resolvent_key in seen:
                     continue
 
                 clauses.append(resolvent)
                 parents.append((i+1,j+1))
+                seen.add(resolvent_key)
 
         i += 1
 
