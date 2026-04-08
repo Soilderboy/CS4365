@@ -20,6 +20,9 @@ Basics:
         ~(p v q) = ~p ^ ~q
         ~(p ^ q) = ~p v ~q
 
+File input:
+    all ors are implied by spaces, all ands are implied by \n
+    
 
 """
 class Clause:
@@ -34,6 +37,7 @@ class Clause:
 
     def __str__(self):
         #return string representation of clause
+        return " v "
 
     def __eq__(self, other):
         #check if two clauses are equal
